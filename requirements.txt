@@ -1,0 +1,7 @@
+PyPDF2
+pillow
+pandas
+pdf2image
+google-generativeai
+python-dotenv
+absl-py
