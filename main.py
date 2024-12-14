@@ -10,6 +10,14 @@ load_dotenv()
 
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
 
+import logging
+# Configure logging
+logging.basicConfig(
+    filename="preptify.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger()
 
 class PDFProcessor:
     """
@@ -28,7 +36,7 @@ class PDFProcessor:
         """
         self.syllabus_pdf_path = syllabus_pdf_path
         self.question_pdfs = question_pdfs
-        self.syllabus_json_path = "syllabus.json"
+        self.syllabus_json_path = "syllabus/syllabus.json"
         self.request_limit = request_limit
         self.cooldown = cooldown
 
@@ -36,7 +44,6 @@ class PDFProcessor:
         """
         Extract and convert syllabus PDF to JSON.
         """
-        print("Processing syllabus...")
         syllabus_extractor = SyllabusExtractor(pdf_path=self.syllabus_pdf_path)
         syllabus_extractor.process(output_json_path=self.syllabus_json_path)
 
@@ -67,11 +74,12 @@ class PDFProcessor:
 
 if __name__ == "__main__":
     # Paths to the syllabus and question PDFs
-    syllabus_pdf_path = "syllabus/syllabus.pdf"
-    question_pdfs = [f"pdfs/{pdf}" for pdf in os.listdir("pdfs")]
+    syllabus_path: str = input("Enter the path to the syllabus PDF: ")
+    questions_path: str = input("Enter the path to the questions PDF: ")
+    question_pdfs = [f"{questions_path}/{pdf}" for pdf in os.listdir(questions_path)]
 
     try:
-        processor = PDFProcessor(syllabus_pdf_path, question_pdfs)
+        processor = PDFProcessor(syllabus_path, question_pdfs)
         processor.run()
     except Exception as e:
         print(f"Error: {e}")

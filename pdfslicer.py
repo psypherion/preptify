@@ -3,6 +3,15 @@ from io import BytesIO
 import os
 from typing import List
 
+import logging
+# Configure logging
+logging.basicConfig(
+    filename="preptify.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger()
+
 class PDFToImageConverter:
     def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
@@ -38,8 +47,15 @@ class PDFToImageConverter:
         """
         Save the images to a directory.
         """
+
+        if "db" not in os.listdir():
+            os.mkdir("db")
+
+        if "images" not in os.listdir("db/"):
+            os.mkdir("db/images")
+
         # Define the directory to save images
-        save_dir = os.path.join(os.getcwd(), f"{self.pdf_name}/images")
+        save_dir = os.path.join(os.getcwd(), f"db/images/{self.pdf_name}/pages")
         os.makedirs(save_dir, exist_ok=True)
 
         for idx, img in enumerate(image_streams):
@@ -54,9 +70,13 @@ class PDFToImageConverter:
 # Convert PDF pages to images
 
 async def main():
-    pdf_slicer = PDFToImageConverter(pdf_path=r"pdfs/paper_2_X.pdf")
-    image_streams = await pdf_slicer.convert_pdf_to_images()
-    await pdf_slicer.save_images(image_streams)
+    pdf_dir: str = input("Enter the path to the PDF directory: ")
+    pdfs: list = os.listdir(pdf_dir)
+
+    for pdf in pdfs:
+        pdf_slicer = PDFToImageConverter(pdf_path=f"{pdf_dir}/{pdf}")
+        image_streams = await pdf_slicer.convert_pdf_to_images()
+        await pdf_slicer.save_images(image_streams)
 
 if __name__ == "__main__":
     import asyncio

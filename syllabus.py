@@ -1,10 +1,18 @@
 import os
 from PyPDF2 import PdfReader
-from absl import logging
 from dotenv import load_dotenv
 import google.generativeai as genai
 import json
 import re
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename="preptify.log",
+    level=logging.INFO,  # Set logging level to INFO (or DEBUG for more detailed logs)
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger()
 
 # Load environment variables
 load_dotenv()
@@ -34,10 +42,8 @@ class SyllabusExtractor:
         self.model_name = model_name
 
         if not self.api_key:
+            logger.error("API key not found. Ensure the GEMINI_API_KEY is set in the environment.")
             raise ValueError("API key not found. Ensure the GEMINI_API_KEY is set in the environment.")
-
-        # Configure logging
-        logging.set_verbosity(logging.ERROR)
 
         # Configure Gemini API
         genai.configure(api_key=self.api_key)
@@ -56,6 +62,7 @@ class SyllabusExtractor:
             str: Extracted text from the PDF.
         """
         if not os.path.exists(pdf_path):
+            logger.error(f"The file '{pdf_path}' does not exist.")
             raise FileNotFoundError(f"The file '{pdf_path}' does not exist.")
 
         reader = PdfReader(pdf_path)
@@ -68,6 +75,7 @@ class SyllabusExtractor:
             with open(output_txt_path, "w", encoding="utf-8") as output_file:
                 output_file.write(extracted_text)
 
+        logger.info(f"Text extracted successfully from {pdf_path}")
         return extracted_text
 
     def jsonify_syllabus(self, syllabus_text: str) -> dict:
@@ -117,13 +125,17 @@ class SyllabusExtractor:
 
         if response.candidates:
             try:
+                logger.info("JSON response generated successfully.")
                 return [json.loads(match) for match in matches]
             except json.JSONDecodeError:
+                logger.error("Failed to parse JSON from the API response.")
                 raise ValueError("Failed to parse JSON from the API response.")
         else:
+            logger.error("No valid response from Gemini API.")
             raise ValueError("No valid response from Gemini API.")
 
-    def process(self, output_txt_path: str = "extracted_text.txt", output_json_path: str = "syllabus.json") -> None:
+
+    def process(self, output_txt_path: str = "syllabus/syllabus.txt", output_json_path: str = "syllabus/syllabus.json") -> None:
         """
         Extract syllabus text from a PDF, convert it to JSON, and save the output.
 
@@ -131,27 +143,42 @@ class SyllabusExtractor:
             output_txt_path (str): Path to save the extracted text as a .txt file.
             output_json_path (str): Path to save the structured JSON.
         """
-        print(f"Extracting text from PDF: {self.pdf_path}")
-        syllabus_text = self.extract_text_from_pdf(self.pdf_path, output_txt_path)
-        print(f"Text successfully extracted to: {output_txt_path}")
+        try:
+            # Ensure the output directory exists
+            output_dir = os.path.dirname(output_txt_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                logger.info(f"Created directory: {output_dir}")
 
-        print("Converting syllabus text to JSON...")
-        syllabus_json = self.jsonify_syllabus(syllabus_text)
+            logger.info(f"Starting processing for {self.pdf_path}")
+            syllabus_text = self.extract_text_from_pdf(self.pdf_path, output_txt_path)
+            logger.info(f"Text extracted to {output_txt_path}")
 
-        with open(output_json_path, "w", encoding="utf-8") as json_file:
-            json.dump(syllabus_json, json_file, indent=4)
+            syllabus_json = self.jsonify_syllabus(syllabus_text)
 
-        print(f"Syllabus JSON successfully saved to: {output_json_path}")
+            # Ensure the JSON output directory exists
+            json_output_dir = os.path.dirname(output_json_path)
+            if json_output_dir and not os.path.exists(json_output_dir):
+                os.makedirs(json_output_dir)
+                logger.info(f"Created directory: {json_output_dir}")
+
+            with open(output_json_path, "w", encoding="utf-8") as json_file:
+                json.dump(syllabus_json, json_file, indent=4)
+
+            logger.info(f"Syllabus JSON saved to {output_json_path}")
+        except Exception as e:
+            logger.error(f"Error in processing: {e}")
+            raise
 
 
 if __name__ == "__main__":
-    # Load environment variables
-    load_dotenv()
-
-    pdf_path = "syllabus/syllabus.pdf"  # Path to the syllabus PDF
+    syllabus_path = input("Enter the path to the syllabus PDF file: ").strip()
 
     try:
-        extractor = SyllabusExtractor(pdf_path)
+        extractor = SyllabusExtractor(pdf_path=syllabus_path)
+        print("Processing syllabus...")
         extractor.process()
+        print("Syllabus processing complete.")
     except Exception as e:
+        logger.error(f"Critical error: {e}")
         print(f"Error: {e}")
