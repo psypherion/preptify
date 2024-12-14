@@ -106,7 +106,7 @@ class TopicCategorizer:
             category_df.to_csv(os.path.join(category_dir, f"{category}_topics.csv"), index=False)
 
             for topic, _ in topics:
-                topic_data = self.df.loc[self.df["topic"] == topic, ["question", "answer"]]
+                topic_data = self.df.loc[self.df["topic"] == topic, ["question", "answer", "explanation"]]
                 topic_csv = os.path.join(category_dir, f"{str(topic).replace('/', '_')}.csv")
                 topic_data.to_csv(topic_csv, index=False)
 
