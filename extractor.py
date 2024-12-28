@@ -81,11 +81,13 @@ class QuestionExtractor:
     def __init__(
         self,
         pdf_path: str,
+        user_id: str,
         syllabus_path: str = SYLLABUS_PATH,
         ocr_models: List[str] = OCR_MODELS,
         api_key: str = GEMINI_API_KEY
     ):
         self.pdf_path = pdf_path
+        self.user_id = user_id
         self.ocr_models = ocr_models
         self.syllabus_content = self.load_syllabus(syllabus_path)
         self.current_model_index = 0
@@ -95,6 +97,17 @@ class QuestionExtractor:
 
         genai.configure(api_key=GEMINI_API_KEY)
         self.model = self._initialize_model()
+
+        # Set up user-specific directories
+        self.base_dir = os.path.join("db", self.user_id)
+        self.image_dir = os.path.join(self.base_dir, "images")
+        self.json_dir = os.path.join(self.base_dir, "json")
+        self.response_dir = os.path.join(self.base_dir, "response")
+        self.question_db_path = os.path.join(self.base_dir, "question_db.csv")
+
+        os.makedirs(self.image_dir, exist_ok=True)
+        os.makedirs(self.json_dir, exist_ok=True)
+        os.makedirs(self.response_dir, exist_ok=True)
 
     def _initialize_model(self):
         model_name = self.ocr_models[self.current_model_index]
@@ -117,7 +130,7 @@ class QuestionExtractor:
     async def pdf_to_images(self) -> str:
         pdf_slicer = PDFToImageConverter(pdf_path=self.pdf_path)
         image_streams = await pdf_slicer.convert_pdf_to_images()
-        image_dir = await pdf_slicer.save_images(image_streams)
+        image_dir = await pdf_slicer.save_images(image_streams, output_dir=self.image_dir)
         return image_dir
 
     async def process_image(self, image_path: str, response_file: str) -> None:
@@ -125,7 +138,7 @@ class QuestionExtractor:
         image = PIL.Image.open(image_path)
         prompt = BASE_PROMPT.replace("<syllabus_content>", self.syllabus_content)
         request_payload = [prompt, image]
-        
+
         print(f"Using model: {self.model.model_name}")
 
         try:
@@ -165,14 +178,7 @@ class QuestionExtractor:
         base_name = os.path.splitext(os.path.basename(self.pdf_path))[0]
         image_dir = await self.pdf_to_images()
 
-        if "db" not in os.listdir():
-            os.mkdir("db")
-        if "responses" not in os.listdir("db/"):
-            os.mkdir("db/responses")
-        if "json" not in os.listdir("db/"):
-            os.mkdir("db/json")  
-
-        response_file = f"db/responses/{base_name}_responses.txt"
+        response_file = os.path.join(self.response_dir, f"{base_name}_responses.txt")
 
         with open(response_file, "w") as file:
             file.write("")
@@ -182,9 +188,11 @@ class QuestionExtractor:
             await self.process_image(full_img_path, response_file)
 
         extracted_data = self.extract_json_from_responses(response_file)
-           
-        await self.save_json(extracted_data, f"db/json/{base_name}_output.json")
-        return "Question extraction and categorization completed!"
+
+        output_json_path = os.path.join(self.json_dir, f"{base_name}_output.json")
+        await self.save_json(extracted_data, output_json_path)
+
+        return f"Question extraction and categorization completed! Output saved to {output_json_path}"
 
 if __name__ == "__main__":
     try:
@@ -192,7 +200,9 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
         pdf_path = input("Enter the path to the PDF file: ").strip()
-        extractor = QuestionExtractor(pdf_path=pdf_path)
+        user_id = input("Enter the user ID: ").strip()
+
+        extractor = QuestionExtractor(pdf_path=pdf_path, user_id=user_id)
         asyncio.run(extractor.run())
     except Exception as e:
         logger.error(f"Critical error: {e}")

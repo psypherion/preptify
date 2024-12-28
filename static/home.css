@@ -19,7 +19,7 @@ input {
 }
 
 body {
-    background: linear-gradient(135deg, #d7d4d8, #967a9ed2);
+    background: linear-gradient(135deg, #d7d4d8, #785681d2);
     color: #252525;
     line-height: 1.6;
     font-size: 16px;
@@ -50,7 +50,7 @@ h1 {
     text-align: center;
     font-weight: 700;
     text-transform: uppercase;
-    background: linear-gradient(to right, #3f0a63, #9425fc);
+    background: linear-gradient(to right, #3f0a63, #ab73df);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -138,6 +138,58 @@ button:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 20px rgba(110, 25, 128, 0.4);
 }
+
+/* Hide the default file input */
+input[type="file"] {
+    display: none;
+}
+
+/* Center alignment for the file upload container */
+.custom-file-upload {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+/* Custom file label styling */
+.file-label {
+    display: inline-block;
+    background-color: #9f88d6; /* Change this color to match your theme */
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    border-radius: 30px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover Effect */
+.file-label:hover {
+    background-color: rgb(156, 50, 218);
+    color: #301c3b;
+    border: 2px solid #0e1f0e;
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Active Effect */
+.file-label:active {
+    transform: translateY(2px);
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Center alignment for overall layout */
+.align-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 
 /* Responsive Styles */
 @media (max-width: 768px) {

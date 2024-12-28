@@ -78,7 +78,7 @@ class PDFProcessor:
                 request_count = 0
 
             print(f"Processing questions from: {question_pdf}")
-            extractor = QuestionExtractor(pdf_path=question_pdf, syllabus_path=self.syllabus_json_path, api_key=self.api_key)
+            extractor = QuestionExtractor(pdf_path=question_pdf, syllabus_path=self.syllabus_json_path,api_key=self.api_key, user_id=self.user_id)
             await extractor.run()
             request_count += 1
 
